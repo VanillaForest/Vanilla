@@ -1,0 +1,11 @@
+#https://www.musl-libc.org/releases/musl-1.1.17.tar.gz
+
+./configure \
+--prefix="$ROOTFS/" \
+--syslibdir="/lib" \
+--disable-wrapper
+
+make -j$THREADS
+make install
+
+ln -s $ROOTFS/lib/lib.so $ROOTFS/lib/ld-musl-x86_64.so.1 
