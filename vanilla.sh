@@ -6,22 +6,41 @@
 # Clean old rootfs
 rm -rf rootfs/
 rm -rf src/
+rm -rf vanilla-log
 
 # Set global variables
 export CC='musl-gcc'
 export CFLAGS='-Os -s'
 export LDFLAGS=
 export THREADS=3
-export ROOTFS="$PWD/rootfs"
 export BASE="$PWD"
+export ROOTFS="$PWD/rootfs"
+export LOG_FILE="vanilla-log"
 
 # Setup rootfs skelly
-mkdir -p rootfs/bin
-mkdir -p rootfs/lib
-mkdir -p rootfs/share
-mkdir -p rootfs/include
+mkdir -p $ROOTFS/bin
+mkdir -p $ROOTFS/lib
+mkdir -p $ROOTFS/share
+mkdir -p $ROOTFS/include
+
+# Setup logging system
+
+# Close STDOUT & STDEER file descriptor
+#exec 1<&-
+#exec 2<&-
+# Open STDOUT as $LOG_FILE file for read and write.
+#exec 1<>$LOG_FILE
+# Redirect STDERR to STDOUT
+#exec 2>&1
 
 # Utils
+
+# Colors
+red="\e[1;31m"
+green="\e[1;32m"
+yellow="\e[1;33m"
+blue="\e[1;34m"
+reset="\e[0m"
 
 # Download a tarball from $1 and extract it in src/$2
 fetch() {
@@ -39,19 +58,28 @@ fetch() {
 	rm -rf $tmpdir
 }
 
-# Parse package database
-for orchid in $(find ./orchids -type f)
-do 
-	# Downloading orchid name source
-	name=$(basename $orchid)
-	url=$(cat $orchid | grep ^\# | tr -d '#')
-	echo " * Building  $name from $url "
+flourish() {
+	# Set package info
+	local orchid=$BASE/orchids/$1
+	local name=$1
+	# Recursivly install dependencies
+	for dep in $(cat $orchid | grep ^\#deps | sed 's/#deps://g')
+	do
+	   flourish $(basename $dep)
+	done
+	# Get url
+	local url=$(cat $orchid | grep ^\#url | sed 's/#url://g')
+	echo -e "$blue *$green Building $red$name$green from$red$url$reset" > /dev/tty
+	# Dowload sources
 	fetch $url $name
 	# Building it
 	cd $BASE/src/$name
-	sh $BASE/$orchid
+	sh $orchid 
 	cd $BASE
-done 
+}
+
+# Install base packages
+flourish busybox
 
 # Cleaning up buid utils
 rm -rf $BASE/src

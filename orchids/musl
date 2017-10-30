@@ -1,9 +1,11 @@
-#https://www.musl-libc.org/releases/musl-1.1.17.tar.gz
+#url: https://www.musl-libc.org/releases/musl-1.1.17.tar.gz
 
 ./configure \
---prefix="$BASE/rootfs/" \
+--prefix="$ROOTFS/" \
 --syslibdir="/lib" \
 --disable-wrapper
 
 make -j$THREADS
-make DESTDIR=$ROOTFS install
+make install
+
+./tools/install.sh -D -l $ROOTFS/lib/libc.so $ROOTFS/lib/ld-musl-x86_64.so.1 || true
